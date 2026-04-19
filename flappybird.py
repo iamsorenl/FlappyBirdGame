@@ -35,7 +35,7 @@ async def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Flappy Bird")
     clock = pygame.time.Clock()
-    font = pygame.font.SysFont(None, 32)
+    font = pygame.font.Font(None, 32)
 
     state = initial_state()
 
