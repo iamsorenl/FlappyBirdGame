@@ -1,80 +1,100 @@
-import pygame
+import asyncio
 import random
 
-# Initialize Pygame
-pygame.init()
+import pygame
 
-# Screen dimensions
 WIDTH, HEIGHT = 400, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Flappy Bird")
-
-# Colors
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
-# Bird properties
-bird_x, bird_y = 50, HEIGHT // 2
-bird_width, bird_height = 40, 40
-bird_movement = 0
-gravity = 0.25
+BIRD_X = 50
+BIRD_W, BIRD_H = 40, 40
+GRAVITY = 0.25
+FLAP = -5
 
-# Pipe properties
-pipe_width = 70
-gap_size = 200
-pipe_frequency = 1500  # milliseconds
-last_pipe = pygame.time.get_ticks()
+PIPE_W = 70
+GAP = 200
+PIPE_FREQ_MS = 1500
+PIPE_SPEED = 5
 
-pipes = []
 
-# Game loop
-running = True
-while running:
-    # Check for events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                bird_movement = -5
+def initial_state():
+    return {
+        "bird_y": HEIGHT // 2,
+        "bird_movement": 0,
+        "pipes": [],
+        "last_pipe": pygame.time.get_ticks(),
+        "game_over": False,
+    }
 
-    # Bird physics
-    bird_movement += gravity
-    bird_y += bird_movement
 
-    # Pipe mechanics
-    time_now = pygame.time.get_ticks()
-    if time_now - last_pipe > pipe_frequency:
-        pipe_height = random.randint(100, 400)
-        bottom_pipe = pygame.Rect(WIDTH, HEIGHT - pipe_height, pipe_width, pipe_height)
-        top_pipe = pygame.Rect(WIDTH, 0, pipe_width, HEIGHT - pipe_height - gap_size)
-        pipes.append(bottom_pipe)
-        pipes.append(top_pipe)
-        last_pipe = time_now
+async def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Flappy Bird")
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont(None, 32)
 
-    for pipe in pipes:
-        pipe.x -= 5
-        if pipe.right < 0:
-            pipes.remove(pipe)
+    state = initial_state()
 
-    # Collision detection
-    bird_rect = pygame.Rect(bird_x, bird_y, bird_width, bird_height)
-    for pipe in pipes:
-        if bird_rect.colliderect(pipe):
-            running = False
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if state["game_over"]:
+                    state = initial_state()
+                else:
+                    state["bird_movement"] = FLAP
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if state["game_over"]:
+                    state = initial_state()
+                else:
+                    state["bird_movement"] = FLAP
 
-    if bird_y > HEIGHT or bird_y < 0:
-        running = False
+        if not state["game_over"]:
+            state["bird_movement"] += GRAVITY
+            state["bird_y"] += state["bird_movement"]
 
-    # Drawing
-    screen.fill(WHITE)
-    pygame.draw.rect(screen, (255, 0, 0), bird_rect)
-    for pipe in pipes:
-        pygame.draw.rect(screen, GREEN, pipe)
+            now = pygame.time.get_ticks()
+            if now - state["last_pipe"] > PIPE_FREQ_MS:
+                pipe_height = random.randint(100, 400)
+                state["pipes"].append(
+                    pygame.Rect(WIDTH, HEIGHT - pipe_height, PIPE_W, pipe_height)
+                )
+                state["pipes"].append(
+                    pygame.Rect(WIDTH, 0, PIPE_W, HEIGHT - pipe_height - GAP)
+                )
+                state["last_pipe"] = now
 
-    pygame.display.update()
+            for pipe in state["pipes"]:
+                pipe.x -= PIPE_SPEED
+            state["pipes"] = [p for p in state["pipes"] if p.right >= 0]
 
-    # Frame rate
-    pygame.time.Clock().tick(30)
+            bird_rect = pygame.Rect(BIRD_X, state["bird_y"], BIRD_W, BIRD_H)
+            if any(bird_rect.colliderect(p) for p in state["pipes"]):
+                state["game_over"] = True
+            if state["bird_y"] > HEIGHT or state["bird_y"] < 0:
+                state["game_over"] = True
 
-pygame.quit()
+        screen.fill(WHITE)
+        pygame.draw.rect(screen, RED, pygame.Rect(BIRD_X, state["bird_y"], BIRD_W, BIRD_H))
+        for pipe in state["pipes"]:
+            pygame.draw.rect(screen, GREEN, pipe)
+
+        if state["game_over"]:
+            msg = font.render("Game Over — press SPACE to restart", True, BLACK)
+            screen.blit(msg, msg.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+        else:
+            hint = font.render("SPACE / click to flap", True, BLACK)
+            screen.blit(hint, (10, 10))
+
+        pygame.display.update()
+        clock.tick(30)
+        await asyncio.sleep(0)
+
+
+asyncio.run(main())
