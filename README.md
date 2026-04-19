@@ -1,21 +1,19 @@
 # FlappyBirdGame
 
-A simple Flappy Bird clone in Python with pygame.
+A simple Flappy Bird clone.
 
 **Play in browser:** https://iamsorenl.github.io/FlappyBirdGame/
 
-Controls: `SPACE` or click to flap. After a game over, `SPACE` / click restarts.
+Controls: `SPACE` / click / tap to flap. After a game over, the same input restarts.
 
-## Run locally
+## Source
+
+- `index.html` — browser version (Canvas 2D, vanilla JS). This is what GitHub Pages serves.
+- `main.py` — original desktop version in Python + pygame.
+
+## Run the Python version locally
 
 ```bash
 pip install pygame
 python main.py
 ```
-
-## How the web build works
-
-The game targets pygame-ce via [pygbag](https://pypi.org/project/pygbag/), which
-compiles it to WebAssembly (Pyodide). A GitHub Actions workflow
-(`.github/workflows/deploy.yml`) builds the `build/web/` output and deploys it
-to GitHub Pages on every push to `main`.
