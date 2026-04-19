@@ -10,7 +10,7 @@ Controls: `SPACE` or click to flap. After a game over, `SPACE` / click restarts.
 
 ```bash
 pip install pygame
-python flappybird.py
+python main.py
 ```
 
 ## How the web build works
